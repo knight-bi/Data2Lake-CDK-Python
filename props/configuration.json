@@ -1,0 +1,41 @@
+{
+    "exexutive_ARN": "arn:aws:iam::193793567275:user/knight.bi",
+
+    "source_endpoint_seeting":
+        {
+            "engine_name": "mysql",
+            "database_name": "pcrgvg",
+            "user_name": "steve",
+            "password": "gyy1994",
+            "port": 3306,
+            "server_name": "139.180.221.11"
+        }
+    ,
+
+    "raw_bucket_lifecycle":
+        {
+            "enable": true,
+            "expiration": 10
+        }
+    ,
+
+    "DMS_instance_setting":
+        {
+            "instance_class": "dms.t2.micro",
+            "allocated_storage": 50
+        }
+    ,
+
+    "glue_job_setting":
+        {
+            "database_ShcemaName_inRawbucket": "pcr_gvg/",
+            "job_capacity": 2,
+            "max_concurrent_run_JobExecution": 1
+        }
+    ,
+
+    "job_trigger_schedule": "cron(0 6 * * ? *)",
+
+    "SNS_email": ["knight.bi@pactera.com","steve.guo@pactera.com"]
+
+}

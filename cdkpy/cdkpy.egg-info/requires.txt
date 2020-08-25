@@ -1,0 +1,12 @@
+aws-cdk.core
+aws-cdk.aws_dynamodb
+aws-cdk.aws_s3
+aws-cdk.aws_dms
+aws-cdk.aws_iam
+aws-cdk.aws_glue
+aws-cdk.aws_s3_assets
+aws-cdk.aws_sns
+aws-cdk.aws_events
+aws-cdk.aws_events_targets
+aws-cdk.aws_sns_subscriptions
+aws-cdk.aws_lakeformation

@@ -1,0 +1,7 @@
+README.md
+setup.py
+cdkpy/cdkpy.egg-info/PKG-INFO
+cdkpy/cdkpy.egg-info/SOURCES.txt
+cdkpy/cdkpy.egg-info/dependency_links.txt
+cdkpy/cdkpy.egg-info/requires.txt
+cdkpy/cdkpy.egg-info/top_level.txt
