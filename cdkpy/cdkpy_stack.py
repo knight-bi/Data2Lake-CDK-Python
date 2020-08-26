@@ -24,20 +24,42 @@ class CdkpyStack(core.Stack):
             py_json1 = json.load(f1)
             ts = json.dumps(py_json1)
             
-        with open('./props/mappingrule.json', 'r') as f2:
-            py_json2 = json.load(f2)
-            mr = json.dumps(py_json2)
+        # with open('./props/mappingrule.json', 'r') as f2:
+        #     py_json2 = json.load(f2)
+        #     mr = json.dumps(py_json2)
 
-        with open('./props/configuration.json', 'r') as f3:
-            configuration = json.load(f3)
-        
+        with open('./props/config.json', 'r') as f2:
+            configuration = json.load(f2)
+
+        def getMappingrules(self, table_list):
+            rules =[]
+            for index, value in enumerate(table_list,1):
+                rules.append(
+                    {
+                        "rule-type": "selection",
+                        "rule-id": str(index),
+                        "rule-name": str(index),
+                        "object-locator": {
+                            "schema-name": value['schemaName'],
+                            "table-name": value['tableName']
+                        },
+                        "rule-action": "include",
+                        "filters": []
+                    }                    
+                )   
+            mapping_rules ={
+                            "rules":rules
+                        }
+            return json.dumps(mapping_rules)
+
+
         # The code that defines your stack goes here
         S3Accessrole = _iam.Role(self, 'dmsrole', assumed_by = _iam.ServicePrincipal('dms.amazonaws.com'),
                                 managed_policies = [_iam.ManagedPolicy.from_aws_managed_policy_name('AmazonS3FullAccess')]
                                 )
 
         raw_bucket = s3.Bucket(self, 'rawbucket', bucket_name ='rawbucket-datalake-cdk-oregon')
-        raw_bucket.add_lifecycle_rule(enabled = configuration['raw_bucket_lifecycle']['enable'], expiration = core.Duration.days(configuration['raw_bucket_lifecycle']['expiration']))
+        raw_bucket.add_lifecycle_rule(enabled = configuration['s3LifecycleRule']['enabled'], expiration = core.Duration.days(configuration['s3LifecycleRule']['expiration']))
                                 
         
         #my_table = ddb.Table(self, id ='dunamoTable', table_name = 'testcdktable',
@@ -50,12 +72,12 @@ class CdkpyStack(core.Stack):
                                             )
         
         source_endpoint = _dms.CfnEndpoint(self,'sourceendpoint',endpoint_type = 'source',
-                                                        engine_name = configuration['source_endpoint_seeting']['engine_name'],
-                                                        database_name = configuration['source_endpoint_seeting']['database_name'],
-                                                        username = configuration['source_endpoint_seeting']['user_name'],
-                                                        password = configuration['source_endpoint_seeting']['password'],
-                                                        port = configuration['source_endpoint_seeting']['port'],
-                                                        server_name = configuration['source_endpoint_seeting']['server_name'],
+                                                        engine_name = configuration['engineName'],
+                                                        database_name = configuration['databaseName'],
+                                                        username = configuration['username'],
+                                                        password = configuration['password'],
+                                                        port = configuration['port'],
+                                                        server_name = configuration['serverName'],
                                             )
 
         target_endpoint = _dms.CfnEndpoint(self, 'targetendpoint', endpoint_type = 'target',
@@ -65,12 +87,13 @@ class CdkpyStack(core.Stack):
                                             extra_connection_attributes = 'dataFormat=parquet'
                                             )
 
+         
         dms_task = _dms.CfnReplicationTask(self, 'data2lake-task',migration_type = 'full-load-and-cdc',
                                            replication_instance_arn = dl_dms.ref,
                                            source_endpoint_arn = source_endpoint.ref,
                                            target_endpoint_arn = target_endpoint.ref,
                                            replication_task_settings = ts,
-                                           table_mappings = mr
+                                           table_mappings = getMappingrules(self, configuration['tableList'])
                                            )
 
         
@@ -95,7 +118,7 @@ class CdkpyStack(core.Stack):
 #so that the lake setting can be allowed by below code in cdk.
         lake_admin_setting = _lakeformation.CfnDataLakeSettings(self, 'data-lake-GrantAdmin', 
                                                             admins =[_lakeformation.CfnDataLakeSettings.DataLakePrincipalProperty(
-                                                                data_lake_principal_identifier = configuration['exexutive_ARN'])]
+                                                                data_lake_principal_identifier = configuration['executiveArn'])]
                                                         ) 
                                                                  
         glue_database = _glue.Database(self, 'gluedatabase',database_name = 'data_lake_gluedb')
@@ -133,7 +156,7 @@ class CdkpyStack(core.Stack):
                                                                                                     ),
                                                             role = glue_role.role_arn,
                                                             default_arguments = {
-                                                                '--prefix': configuration['glue_job_setting']['database_ShcemaName_inRawbucket'],
+                                                                '--prefix': str(configuration['tableList']),
                                                                 '--bucket': raw_bucket.bucket_name,
                                                                 '--datalake_bucket': datalake_bucket.bucket_name,
                                                                 '--datalake_prefix': 'datalake/',
@@ -151,7 +174,7 @@ class CdkpyStack(core.Stack):
                                                                 ),
                                                                 role = glue_role.role_arn,
                                                                 default_arguments = {
-                                                                    '--prefix': 'pcr_gvg/',
+                                                                    '--prefix': str(configuration['tableList']),
                                                                     '--bucket': raw_bucket.bucket_name,
                                                                     '--datalake_bucket': datalake_bucket.bucket_name,
                                                                     '--datalake_prefix': 'datalake/',
@@ -176,7 +199,7 @@ class CdkpyStack(core.Stack):
 
         dl_sns = _sns.Topic(self, 'datalake_sns', display_name = 'data-lake-sns')
         
-        endpoint_email =configuration['SNS_email']
+        endpoint_email =configuration['emailSubscriptionList']
     
         for emails in endpoint_email:
             dl_sns.add_subscription(_subscrption.EmailSubscription(emails))
@@ -219,3 +242,6 @@ class CdkpyStack(core.Stack):
                                                                                                                                                                                                                             
 #CfnPermissions.DataLakePrincipalProperty(glue_role.role_arn)   permissions = ['ALL'] CfnPermissions.DatabaseResourceProperty
                                                            
+
+
+

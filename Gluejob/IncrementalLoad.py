@@ -133,7 +133,6 @@ class LoadIncremental():
         
         result = new_inserted.union(new_updated.select(*partitionKeys)).union(update_existing).union(delete_existing)
         return result.distinct().collect()
-
     # Fore partitionKey 'created_year,created_month', add created_year, created_month column to inputfile
     def prepare_partition_columns(self, inputfile, partitionKeys):
         if 'created_year' in partitionKeys and 'created_month' in partitionKeys and 'created_day' in partitionKeys:
